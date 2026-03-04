@@ -39,8 +39,9 @@ Testing is file-integrity based rather than unit-test based.
 ## Commit & Pull Request Guidelines
 Git history is not available in this exported folder, so follow a clear, conventional format:
 
-- Commit message style: `<scope>: <imperative summary>`  
-  Examples: `assets: add books_21.jpeg`, `docs: update contributor guide`.
+- Commit message style: `<scope>: <imperative summary>`.
+- Commit messages must always be written in Spanish.  
+  Examples: `assets: agrega books_21.jpeg`, `docs: actualiza la guia de contribucion`.
 - PRs should include:
   - What changed and why.
   - A list of added/removed/renamed files.
