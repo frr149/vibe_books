@@ -1,0 +1,655 @@
+#!/usr/bin/env python3
+"""Extract book metadata from shelf images and export it as CSV.
+
+The script is best-effort: OCR on book spines is noisy, so unknown fields are
+filled with "desconocido" when confidence is low.
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+from functools import lru_cache
+import re
+import shutil
+import statistics
+import subprocess
+import unicodedata
+from dataclasses import dataclass
+from pathlib import Path
+
+
+PUBLISHERS = [
+    "Addison-Wesley",
+    "Apress",
+    "Cambridge",
+    "CRC Press",
+    "Dover",
+    "Dutton",
+    "HarperCollins",
+    "Manning",
+    "McGraw-Hill",
+    "MIT Press",
+    "No Starch Press",
+    "O'Reilly",
+    "Packt",
+    "Pearson",
+    "Penguin",
+    "Prentice Hall",
+    "Random House",
+    "Springer",
+    "Sybex",
+    "Wiley",
+]
+
+STOP_WORDS = {
+    "a",
+    "an",
+    "and",
+    "as",
+    "at",
+    "by",
+    "for",
+    "from",
+    "in",
+    "into",
+    "of",
+    "on",
+    "or",
+    "the",
+    "to",
+    "with",
+}
+
+KNOWN_BOOK_TERMS = {
+    "ai",
+    "algorithm",
+    "algorithms",
+    "analysis",
+    "artificial",
+    "asimov",
+    "automata",
+    "bitcoin",
+    "code",
+    "coding",
+    "computation",
+    "computer",
+    "concurrent",
+    "data",
+    "deep",
+    "design",
+    "development",
+    "fiction",
+    "functional",
+    "game",
+    "generative",
+    "graphics",
+    "haskell",
+    "idris",
+    "intelligence",
+    "interview",
+    "language",
+    "large",
+    "learn",
+    "learning",
+    "linux",
+    "machine",
+    "management",
+    "marketing",
+    "math",
+    "model",
+    "models",
+    "neural",
+    "network",
+    "networks",
+    "probabilistic",
+    "processing",
+    "programming",
+    "python",
+    "robot",
+    "robotics",
+    "scheme",
+    "science",
+    "software",
+    "statistics",
+    "structure",
+    "systems",
+    "theory",
+    "transformers",
+    "types",
+}
+
+LANGUAGE_STOPWORDS = {
+    "en": {
+        "the",
+        "and",
+        "for",
+        "with",
+        "of",
+        "to",
+        "in",
+        "a",
+        "an",
+        "on",
+        "from",
+        "machine",
+        "learning",
+    },
+    "es": {
+        "el",
+        "la",
+        "los",
+        "las",
+        "de",
+        "del",
+        "en",
+        "para",
+        "con",
+        "una",
+        "un",
+        "que",
+        "por",
+    },
+    "fr": {"le", "la", "les", "de", "des", "pour", "avec", "une", "un", "et"},
+    "de": {"der", "die", "das", "und", "mit", "fur", "ein", "eine", "von"},
+    "it": {"il", "lo", "la", "gli", "le", "di", "con", "per", "una", "un"},
+    "pt": {"o", "a", "os", "as", "de", "do", "da", "com", "para", "uma", "um"},
+}
+
+LANGUAGE_LABELS = {
+    "en": "ingles",
+    "es": "espanol",
+    "fr": "frances",
+    "de": "aleman",
+    "it": "italiano",
+    "pt": "portugues",
+}
+
+GENRE_KEYWORDS = {
+    "Machine Learning / AI": {
+        "machine learning",
+        "deep learning",
+        "neural",
+        "ai",
+        "artificial intelligence",
+        "probabilistic",
+        "nlp",
+        "transformer",
+        "computer vision",
+    },
+    "Data Science": {
+        "data science",
+        "data mining",
+        "analytics",
+        "statistics",
+        "feature",
+        "prediction",
+    },
+    "Programming": {
+        "python",
+        "java",
+        "javascript",
+        "programming",
+        "code",
+        "software",
+        "algorithm",
+        "clean code",
+        "design patterns",
+    },
+    "Computer Science": {
+        "computer",
+        "operating systems",
+        "distributed systems",
+        "network",
+        "database",
+        "compiler",
+        "architecture",
+    },
+    "Game Development": {"game", "unity", "unreal", "graphics"},
+    "Mathematics / Statistics": {"math", "mathematics", "calculus", "linear algebra"},
+    "Fiction": {"novel", "chronicles", "world", "dragon", "empire", "story"},
+    "Business": {"startup", "management", "marketing", "strategy", "product"},
+}
+
+NOISE_WORDS = {
+    "edition",
+    "third",
+    "second",
+    "fourth",
+    "vol",
+    "volume",
+    "series",
+    "press",
+    "publishing",
+    "introduction",
+}
+
+WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9'&:+.-]*")
+
+
+@dataclass
+class OcrWord:
+    text: str
+    conf: float
+    left: int
+    top: int
+    width: int
+    height: int
+    block_num: int
+    par_num: int
+    line_num: int
+
+
+@dataclass
+class OcrLine:
+    text: str
+    conf: float
+    left: int
+    top: int
+    width: int
+    height: int
+
+
+def normalize_text(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text)
+    normalized = normalized.encode("ascii", "ignore").decode("ascii")
+    normalized = re.sub(r"[^a-zA-Z0-9\s]", " ", normalized)
+    return re.sub(r"\s+", " ", normalized).strip().lower()
+
+
+def run_command(command: list[str]) -> str:
+    completed = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        return ""
+    return completed.stdout
+
+
+def ocr_words_from_image(image_path: Path, tesseract_bin: str) -> list[OcrWord]:
+    tsv_output = run_command(
+        [tesseract_bin, str(image_path), "stdout", "-l", "eng", "--psm", "3", "tsv"]
+    )
+
+    if not tsv_output.strip():
+        return []
+
+    rows = tsv_output.splitlines()
+    if not rows:
+        return []
+
+    words: list[OcrWord] = []
+    for row in rows[1:]:
+        columns = row.split("\t")
+        if len(columns) < 12:
+            continue
+        text = columns[11].strip()
+        if not text or not re.search(r"[A-Za-z]", text):
+            continue
+        try:
+            conf = float(columns[10])
+            if conf < 42:
+                continue
+            words.append(
+                OcrWord(
+                    text=text,
+                    conf=conf,
+                    left=int(columns[6]),
+                    top=int(columns[7]),
+                    width=int(columns[8]),
+                    height=int(columns[9]),
+                    block_num=int(columns[2]),
+                    par_num=int(columns[3]),
+                    line_num=int(columns[4]),
+                )
+            )
+        except ValueError:
+            continue
+    return words
+
+
+def build_lines(words: list[OcrWord]) -> list[OcrLine]:
+    grouped: dict[tuple[int, int, int], list[OcrWord]] = {}
+    for word in words:
+        key = (word.block_num, word.par_num, word.line_num)
+        grouped.setdefault(key, []).append(word)
+
+    lines: list[OcrLine] = []
+    for line_words in grouped.values():
+        line_words.sort(key=lambda item: item.left)
+        text = " ".join(word.text for word in line_words).strip()
+        cleaned = normalize_text(text)
+        if len(cleaned) < 4:
+            continue
+        line_conf = sum(word.conf for word in line_words) / len(line_words)
+        line_top = min(word.top for word in line_words)
+        line_height = max(word.height for word in line_words)
+        lines.append(
+            OcrLine(text=text, conf=line_conf, top=line_top, height=max(line_height, 1))
+        )
+    return lines
+
+
+def cluster_lines(lines: list[OcrLine]) -> list[list[OcrLine]]:
+    if not lines:
+        return []
+
+    lines = sorted(lines, key=lambda item: item.top)
+    median_height = statistics.median(line.height for line in lines)
+    threshold = max(24, int(median_height * 1.8))
+
+    clusters: list[list[OcrLine]] = []
+    current: list[OcrLine] = [lines[0]]
+    last_top = lines[0].top
+
+    for line in lines[1:]:
+        if abs(line.top - last_top) <= threshold:
+            current.append(line)
+        else:
+            clusters.append(current)
+            current = [line]
+        last_top = line.top
+    clusters.append(current)
+    return clusters
+
+
+def extract_publisher(text: str) -> str:
+    normalized = normalize_text(text)
+    for publisher in PUBLISHERS:
+        publisher_norm = normalize_text(publisher)
+        if publisher_norm and publisher_norm in normalized:
+            return publisher
+    return "desconocido"
+
+
+def score_title_line(line: str) -> float:
+    words = WORD_RE.findall(line)
+    if len(words) < 2:
+        return -10
+
+    lower_words = [word.lower() for word in words]
+    if sum(1 for word in lower_words if word in NOISE_WORDS) > 2:
+        return -5
+
+    score = 0.0
+    if 2 <= len(words) <= 10:
+        score += 2.0
+    score += min(len(" ".join(words)) / 18.0, 3.0)
+
+    titlecase_ratio = sum(
+        1 for word in words if word[0].isupper() or word.isupper()
+    ) / len(words)
+    score += titlecase_ratio
+
+    if any(char.isdigit() for char in line):
+        score -= 1.0
+    return score
+
+
+def is_plausible_title(title: str) -> bool:
+    words = WORD_RE.findall(title)
+    if not (2 <= len(words) <= 12):
+        return False
+
+    joined = "".join(words)
+    if len(joined) < 8:
+        return False
+
+    alpha_ratio = sum(ch.isalpha() for ch in title) / max(len(title), 1)
+    if alpha_ratio < 0.72:
+        return False
+
+    if sum(1 for word in words if len(word) == 1) > max(1, len(words) // 3):
+        return False
+
+    long_words = [word for word in words if len(word) >= 4]
+    if not long_words:
+        return False
+
+    vowel_words = sum(
+        1
+        for word in words
+        if re.search(r"[aeiouyAEIOUYáéíóúÁÉÍÓÚ]", word) is not None
+    )
+    if vowel_words / len(words) < 0.6:
+        return False
+
+    weird_words = sum(
+        1
+        for word in words
+        if re.search(r"(.)\1\1\1", word) or any(not ch.isalnum() for ch in word)
+    )
+    if weird_words > 0:
+        return False
+
+    return True
+
+
+def extract_title(lines: list[str]) -> str:
+    scored = sorted(((line, score_title_line(line)) for line in lines), key=lambda x: x[1], reverse=True)
+    if not scored:
+        return "desconocido"
+    if scored[0][1] < 2.8:
+        return "desconocido"
+
+    candidates = [line for line, _score in scored]
+    for candidate in candidates:
+        words = WORD_RE.findall(candidate)
+        if len(words) < 2:
+            continue
+        title = " ".join(words)
+        if len(normalize_text(title)) < 5:
+            continue
+        if not is_plausible_title(title):
+            continue
+        return title
+    return "desconocido"
+
+
+def looks_like_author(line: str) -> bool:
+    words = WORD_RE.findall(line)
+    if not (2 <= len(words) <= 5):
+        return False
+    if any(any(char.isdigit() for char in word) for word in words):
+        return False
+    lower = [word.lower() for word in words]
+    if sum(1 for word in lower if word in NOISE_WORDS) > 0:
+        return False
+    return all(word[0].isupper() for word in words if word)
+
+
+def extract_author(lines: list[str], title: str) -> str:
+    title_norm = normalize_text(title)
+    for line in lines:
+        if not looks_like_author(line):
+            continue
+        candidate = " ".join(WORD_RE.findall(line))
+        if not candidate:
+            continue
+        if normalize_text(candidate) == title_norm:
+            continue
+        return candidate
+    return "desconocido"
+
+
+def detect_language(text: str) -> str:
+    tokens = set(normalize_text(text).split())
+    if not tokens:
+        return "desconocido"
+
+    scores: dict[str, int] = {}
+    for code, stopwords in LANGUAGE_STOPWORDS.items():
+        scores[code] = len(tokens.intersection(stopwords))
+
+    best_code = max(scores, key=scores.get)
+    if scores[best_code] == 0:
+        return "desconocido"
+    return LANGUAGE_LABELS[best_code]
+
+
+def estimate_genre(text: str) -> str:
+    normalized = normalize_text(text)
+    for genre, keywords in GENRE_KEYWORDS.items():
+        for keyword in keywords:
+            if normalize_text(keyword) in normalized:
+                return genre
+    return "Tecnologia"
+
+
+def merge_value(current: str, incoming: str) -> str:
+    if current == "desconocido" and incoming != "desconocido":
+        return incoming
+    if incoming != "desconocido" and len(incoming) > len(current):
+        return incoming
+    return current
+
+
+def extract_records_from_image(
+    image_path: Path,
+    tesseract_bin: str,
+    magick_bin: str | None,
+) -> list[dict[str, str]]:
+    all_lines: list[OcrLine] = []
+    for rotation in (90, 270, 0):
+        words = ocr_words_from_image(image_path, rotation, tesseract_bin, magick_bin)
+        if not words:
+            continue
+        all_lines.extend(build_lines(words))
+
+    if not all_lines:
+        return []
+
+    clusters = cluster_lines(all_lines)
+    records: list[dict[str, str]] = []
+    for cluster in clusters:
+        if not cluster:
+            continue
+        cluster_conf = sum(line.conf for line in cluster) / len(cluster)
+        if cluster_conf < 38:
+            continue
+
+        cluster_lines_text = [line.text.strip() for line in cluster if line.text.strip()]
+        if not cluster_lines_text:
+            continue
+
+        combined_text = " | ".join(cluster_lines_text)
+        if len(WORD_RE.findall(combined_text)) < 3:
+            continue
+
+        title = extract_title(cluster_lines_text)
+        if title == "desconocido":
+            continue
+
+        author = extract_author(cluster_lines_text, title)
+        publisher = extract_publisher(combined_text)
+        language = detect_language(combined_text + " " + title)
+        genre = estimate_genre(combined_text + " " + title)
+
+        records.append(
+            {
+                "autor_o_autores": author,
+                "titulo": title,
+                "editorial": publisher,
+                "idioma": language,
+                "genero": genre,
+            }
+        )
+    return records
+
+
+def deduplicate_records(records: list[dict[str, str]]) -> list[dict[str, str]]:
+    merged: dict[str, dict[str, str]] = {}
+    for record in records:
+        key = normalize_text(record["titulo"])
+        if not key or key == "desconocido":
+            continue
+        if not is_plausible_title(record["titulo"]):
+            continue
+
+        if key not in merged:
+            merged[key] = record.copy()
+            continue
+
+        existing = merged[key]
+        existing["autor_o_autores"] = merge_value(
+            existing["autor_o_autores"], record["autor_o_autores"]
+        )
+        existing["editorial"] = merge_value(existing["editorial"], record["editorial"])
+        existing["idioma"] = merge_value(existing["idioma"], record["idioma"])
+        existing["genero"] = merge_value(existing["genero"], record["genero"])
+    return sorted(merged.values(), key=lambda item: normalize_text(item["titulo"]))
+
+
+def write_csv(records: list[dict[str, str]], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.DictWriter(
+            csv_file,
+            fieldnames=[
+                "autor_o_autores",
+                "titulo",
+                "editorial",
+                "idioma",
+                "genero",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(records)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Procesa imagenes de estanterias y extrae metadata de libros a CSV."
+    )
+    parser.add_argument(
+        "--input-dir",
+        default="assets",
+        help="Directorio con imagenes .jpeg/.jpg/.png (default: assets).",
+    )
+    parser.add_argument(
+        "--output",
+        default="books_data.csv",
+        help="Ruta del CSV de salida (default: books_data.csv).",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    input_dir = Path(args.input_dir)
+    output_path = Path(args.output)
+
+    if not input_dir.exists():
+        raise SystemExit(f"Directorio no encontrado: {input_dir}")
+
+    tesseract_bin = shutil.which("tesseract")
+    if not tesseract_bin:
+        raise SystemExit("No se encontro tesseract en PATH.")
+
+    magick_bin = shutil.which("magick")
+
+    image_paths = sorted(
+        [
+            path
+            for path in input_dir.iterdir()
+            if path.is_file() and path.suffix.lower() in {".jpg", ".jpeg", ".png"}
+        ]
+    )
+    if not image_paths:
+        raise SystemExit(f"No se encontraron imagenes en {input_dir}")
+
+    all_records: list[dict[str, str]] = []
+    for image_path in image_paths:
+        all_records.extend(extract_records_from_image(image_path, tesseract_bin, magick_bin))
+
+    final_records = deduplicate_records(all_records)
+    write_csv(final_records, output_path)
+    print(f"CSV generado: {output_path} ({len(final_records)} registros)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
