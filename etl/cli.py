@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from etl.enrich import enrich_from_isbn
 from etl.normalize import normalize_csv
 from etl.resolve_isbn import resolve_isbn
 
@@ -57,6 +58,38 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Limita filas procesadas para pruebas.",
     )
+
+    enrich_parser = subparsers.add_parser(
+        "enrich",
+        help="Ejecuta la Fase 3: enriquece campos faltantes usando ISBN resuelto.",
+    )
+    enrich_parser.add_argument(
+        "--input",
+        default="data/books_isbn_resolved.csv",
+        help="CSV de entrada con ISBN (default: data/books_isbn_resolved.csv).",
+    )
+    enrich_parser.add_argument(
+        "--output",
+        default="data/books_enriched.csv",
+        help="CSV enriquecido (default: data/books_enriched.csv).",
+    )
+    enrich_parser.add_argument(
+        "--min-confidence",
+        type=float,
+        default=0.75,
+        help="Score minimo para aceptar rellenos automaticos (default: 0.75).",
+    )
+    enrich_parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Limita filas procesadas para pruebas.",
+    )
+    enrich_parser.add_argument(
+        "--librario-token",
+        default=None,
+        help="Token de Librario. Si no se envia, usa LIBRARIO_API_TOKEN.",
+    )
     return parser
 
 
@@ -102,6 +135,33 @@ def run_resolve_isbn(
     return 0
 
 
+def run_enrich(
+    input_file: str,
+    output_file: str,
+    min_confidence: float,
+    limit: int | None,
+    librario_token: str | None,
+) -> int:
+    input_path = Path(input_file)
+    output_path = Path(output_file)
+
+    if not input_path.exists():
+        raise SystemExit(f"No se encontro el archivo de entrada: {input_path}")
+
+    rows, filled_fields, conflicts = enrich_from_isbn(
+        input_path=input_path,
+        output_path=output_path,
+        min_confidence=min_confidence,
+        limit=limit,
+        librario_token=librario_token,
+    )
+    print(f"Fase 3 completada: {rows} filas procesadas")
+    print(f"Campos faltantes completados: {filled_fields}")
+    print(f"Conflictos detectados: {conflicts}")
+    print(f"Salida enriquecida: {output_path}")
+    return 0
+
+
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
@@ -115,6 +175,14 @@ def main() -> int:
             output_resolved=args.output_resolved,
             min_confidence=args.min_confidence,
             limit=args.limit,
+        )
+    if args.command == "enrich":
+        return run_enrich(
+            input_file=args.input,
+            output_file=args.output,
+            min_confidence=args.min_confidence,
+            limit=args.limit,
+            librario_token=args.librario_token,
         )
 
     raise SystemExit(f"Comando no soportado: {args.command}")

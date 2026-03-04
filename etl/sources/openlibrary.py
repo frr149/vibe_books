@@ -9,6 +9,7 @@ from etl.models import SourceBook
 from etl.normalize import UNKNOWN_VALUE, normalize_display_text
 
 OPENLIBRARY_SEARCH_URL = "https://openlibrary.org/search.json"
+OPENLIBRARY_BOOKS_API_URL = "https://openlibrary.org/api/books"
 
 LANGUAGE_BY_CODE = {
     "eng": "ingles",
@@ -110,3 +111,43 @@ class OpenLibrarySource:
             )
         return candidates
 
+    def fetch_by_isbn(self, isbn: str) -> SourceBook | None:
+        params = {
+            "bibkeys": f"ISBN:{isbn}",
+            "format": "json",
+            "jscmd": "data",
+        }
+        payload = self._request(params)
+        key = f"ISBN:{isbn}"
+        if key not in payload:
+            return None
+
+        book = payload.get(key, {})
+        title_value = normalize_display_text(book.get("title", ""))
+        authors = "; ".join(
+            normalize_display_text(item.get("name", "")) for item in book.get("authors", [])
+        )
+        publisher = UNKNOWN_VALUE
+        publishers = book.get("publishers", [])
+        if publishers:
+            publisher = normalize_display_text(publishers[0].get("name", UNKNOWN_VALUE))
+
+        language = UNKNOWN_VALUE
+        for entry in book.get("languages", []):
+            code = str(entry.get("key", "")).rsplit("/", maxsplit=1)[-1].lower()
+            if code in LANGUAGE_BY_CODE:
+                language = LANGUAGE_BY_CODE[code]
+                break
+
+        source_id = normalize_display_text(book.get("key", "")) or key
+        isbn_13, isbn_10 = _extract_isbn([isbn])
+        return SourceBook(
+            source=self.name,
+            source_id=source_id,
+            title=title_value or UNKNOWN_VALUE,
+            authors=authors or UNKNOWN_VALUE,
+            publisher=publisher or UNKNOWN_VALUE,
+            language=language,
+            isbn_13=isbn_13,
+            isbn_10=isbn_10,
+        )

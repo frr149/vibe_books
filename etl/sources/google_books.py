@@ -106,3 +106,39 @@ class GoogleBooksSource:
             )
         return candidates
 
+    def fetch_by_isbn(self, isbn: str) -> SourceBook | None:
+        params = {
+            "q": f"isbn:{isbn}",
+            "printType": "books",
+            "maxResults": "1",
+        }
+        payload = self._request(params)
+        items = payload.get("items", [])
+        if not items:
+            return None
+
+        item = items[0]
+        volume_info = item.get("volumeInfo", {})
+        isbn_13, isbn_10 = _extract_isbn(volume_info.get("industryIdentifiers", []))
+        if not isbn_13 and not isbn_10:
+            isbn_13, isbn_10 = _extract_isbn(
+                [{"type": "ISBN_13", "identifier": isbn}],
+            )
+
+        title_value = normalize_display_text(volume_info.get("title", ""))
+        authors = "; ".join(
+            normalize_display_text(name) for name in volume_info.get("authors", [])
+        )
+        publisher = normalize_display_text(volume_info.get("publisher", UNKNOWN_VALUE))
+        language = _language_from_google(str(volume_info.get("language", "")))
+        source_id = str(item.get("id", "")).strip()
+        return SourceBook(
+            source=self.name,
+            source_id=source_id or isbn,
+            title=title_value or UNKNOWN_VALUE,
+            authors=authors or UNKNOWN_VALUE,
+            publisher=publisher or UNKNOWN_VALUE,
+            language=language,
+            isbn_13=isbn_13,
+            isbn_10=isbn_10,
+        )
