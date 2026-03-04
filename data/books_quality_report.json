@@ -1,0 +1,20 @@
+{
+  "total_rows": 129,
+  "coverage": {
+    "autor_o_autores": 1.0,
+    "editorial": 0.7287,
+    "idioma": 1.0,
+    "genero": 1.0,
+    "isbn": 0.8605
+  },
+  "review_status_distribution": {
+    "auto_accepted": 107,
+    "unresolved": 18,
+    "needs_review": 4
+  },
+  "quality_rates": {
+    "auto_accepted": 0.8295,
+    "needs_review": 0.031,
+    "unresolved": 0.1395
+  }
+}

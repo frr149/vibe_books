@@ -5,6 +5,7 @@ from pathlib import Path
 
 from etl.enrich import enrich_from_isbn
 from etl.normalize import normalize_csv
+from etl.report import run_phase4
 from etl.resolve_isbn import resolve_isbn
 
 
@@ -90,6 +91,26 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Token de Librario. Si no se envia, usa LIBRARIO_API_TOKEN.",
     )
+
+    phase4_parser = subparsers.add_parser(
+        "phase4",
+        help="Ejecuta la Fase 4: genera cola de revision y reporte de calidad.",
+    )
+    phase4_parser.add_argument(
+        "--input",
+        default="data/books_enriched.csv",
+        help="CSV enriquecido de entrada (default: data/books_enriched.csv).",
+    )
+    phase4_parser.add_argument(
+        "--output-review",
+        default="data/books_review.csv",
+        help="CSV con filas a revisar (default: data/books_review.csv).",
+    )
+    phase4_parser.add_argument(
+        "--output-report",
+        default="data/books_quality_report.json",
+        help="Reporte JSON de calidad (default: data/books_quality_report.json).",
+    )
     return parser
 
 
@@ -162,6 +183,30 @@ def run_enrich(
     return 0
 
 
+def run_review_and_report(
+    input_file: str,
+    output_review: str,
+    output_report: str,
+) -> int:
+    input_path = Path(input_file)
+    review_path = Path(output_review)
+    report_path = Path(output_report)
+
+    if not input_path.exists():
+        raise SystemExit(f"No se encontro el archivo de entrada: {input_path}")
+
+    total, review_rows = run_phase4(
+        input_path=input_path,
+        review_output_path=review_path,
+        report_output_path=report_path,
+    )
+    print(f"Fase 4 completada: {total} filas analizadas")
+    print(f"Filas en cola de revision: {review_rows}")
+    print(f"Salida revision: {review_path}")
+    print(f"Salida reporte: {report_path}")
+    return 0
+
+
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
@@ -183,6 +228,12 @@ def main() -> int:
             min_confidence=args.min_confidence,
             limit=args.limit,
             librario_token=args.librario_token,
+        )
+    if args.command == "phase4":
+        return run_review_and_report(
+            input_file=args.input,
+            output_review=args.output_review,
+            output_report=args.output_report,
         )
 
     raise SystemExit(f"Comando no soportado: {args.command}")
