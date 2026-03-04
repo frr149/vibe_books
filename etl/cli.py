@@ -3,7 +3,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from etl.covers import fetch_covers
 from etl.enrich import enrich_from_isbn
+from etl.fallback_review import run_fallback_review
 from etl.normalize import normalize_csv
 from etl.report import run_phase4
 from etl.resolve_isbn import resolve_isbn
@@ -111,6 +113,111 @@ def build_parser() -> argparse.ArgumentParser:
         default="data/books_quality_report.json",
         help="Reporte JSON de calidad (default: data/books_quality_report.json).",
     )
+
+    fallback_parser = subparsers.add_parser(
+        "fallback-review",
+        help="Ejecuta la Fase 4.5: fallback automatico para casos ambiguos.",
+    )
+    fallback_parser.add_argument(
+        "--input-enriched",
+        default="data/books_enriched.csv",
+        help="CSV enriquecido de entrada (default: data/books_enriched.csv).",
+    )
+    fallback_parser.add_argument(
+        "--input-review",
+        default="data/books_review.csv",
+        help="CSV en cola de revision (default: data/books_review.csv).",
+    )
+    fallback_parser.add_argument(
+        "--input-candidates",
+        default="data/books_candidates.csv",
+        help="CSV de candidatos fase 2 (default: data/books_candidates.csv).",
+    )
+    fallback_parser.add_argument(
+        "--output-overrides",
+        default="data/books_manual_overrides.csv",
+        help="Overrides aplicados por fallback (default: data/books_manual_overrides.csv).",
+    )
+    fallback_parser.add_argument(
+        "--output-enriched",
+        default="data/books_enriched.csv",
+        help="CSV enriquecido actualizado (default: data/books_enriched.csv).",
+    )
+    fallback_parser.add_argument(
+        "--output-review-remaining",
+        default="data/books_review_remaining.csv",
+        help="CSV con revision restante (default: data/books_review_remaining.csv).",
+    )
+    fallback_parser.add_argument(
+        "--output-report",
+        default="data/books_fallback_report.json",
+        help="Reporte del fallback (default: data/books_fallback_report.json).",
+    )
+    fallback_parser.add_argument(
+        "--min-score",
+        type=float,
+        default=0.88,
+        help="Score minimo para autoaceptar (default: 0.88).",
+    )
+    fallback_parser.add_argument(
+        "--min-title-score",
+        type=float,
+        default=0.90,
+        help="Score minimo de titulo (default: 0.90).",
+    )
+    fallback_parser.add_argument(
+        "--min-authors-score",
+        type=float,
+        default=0.40,
+        help="Score minimo de autores (default: 0.40).",
+    )
+    fallback_parser.add_argument(
+        "--min-margin",
+        type=float,
+        default=0.03,
+        help="Margen minimo entre top-1 y top-2 (default: 0.03).",
+    )
+    fallback_parser.add_argument(
+        "--no-online-discovery",
+        action="store_true",
+        help="Desactiva busqueda online de candidatos adicionales para unresolved.",
+    )
+
+    covers_parser = subparsers.add_parser(
+        "fetch-covers",
+        help="Ejecuta la fase final: descarga portadas usando ISBN.",
+    )
+    covers_parser.add_argument(
+        "--input",
+        default="data/books_enriched.csv",
+        help="CSV enriquecido de entrada (default: data/books_enriched.csv).",
+    )
+    covers_parser.add_argument(
+        "--output-enriched",
+        default="data/books_enriched.csv",
+        help="CSV enriquecido de salida con rutas de portada (default: data/books_enriched.csv).",
+    )
+    covers_parser.add_argument(
+        "--covers-dir",
+        default="data/covers",
+        help="Directorio donde guardar portadas (default: data/covers).",
+    )
+    covers_parser.add_argument(
+        "--output-manifest",
+        default="data/covers_manifest.csv",
+        help="CSV manifiesto de descarga (default: data/covers_manifest.csv).",
+    )
+    covers_parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Limita filas procesadas para pruebas.",
+    )
+    covers_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Si existe portada local, vuelve a descargarla.",
+    )
     return parser
 
 
@@ -207,6 +314,89 @@ def run_review_and_report(
     return 0
 
 
+def run_fallback(
+    input_enriched: str,
+    input_review: str,
+    input_candidates: str,
+    output_overrides: str,
+    output_enriched: str,
+    output_review_remaining: str,
+    output_report: str,
+    min_score: float,
+    min_title_score: float,
+    min_authors_score: float,
+    min_margin: float,
+    no_online_discovery: bool,
+) -> int:
+    enriched_input_path = Path(input_enriched)
+    review_input_path = Path(input_review)
+    candidates_input_path = Path(input_candidates)
+    overrides_output_path = Path(output_overrides)
+    enriched_output_path = Path(output_enriched)
+    review_remaining_output_path = Path(output_review_remaining)
+    report_output_path = Path(output_report)
+
+    for path in (enriched_input_path, review_input_path, candidates_input_path):
+        if not path.exists():
+            raise SystemExit(f"No se encontro el archivo de entrada: {path}")
+
+    total_rows, resolved_by_fallback, review_remaining = run_fallback_review(
+        enriched_input_path=enriched_input_path,
+        review_input_path=review_input_path,
+        candidates_input_path=candidates_input_path,
+        overrides_output_path=overrides_output_path,
+        enriched_output_path=enriched_output_path,
+        review_remaining_output_path=review_remaining_output_path,
+        fallback_report_output_path=report_output_path,
+        min_score=min_score,
+        min_title_score=min_title_score,
+        min_authors_score=min_authors_score,
+        min_margin=min_margin,
+        enable_online_discovery=not no_online_discovery,
+    )
+    print(f"Fase 4.5 completada: {total_rows} filas procesadas")
+    print(f"Resueltos por fallback: {resolved_by_fallback}")
+    print(f"Pendientes tras fallback: {review_remaining}")
+    print(f"Overrides: {overrides_output_path}")
+    print(f"CSV actualizado: {enriched_output_path}")
+    print(f"Revision restante: {review_remaining_output_path}")
+    print(f"Reporte fallback: {report_output_path}")
+    return 0
+
+
+def run_fetch_covers(
+    input_file: str,
+    output_enriched: str,
+    covers_dir: str,
+    output_manifest: str,
+    limit: int | None,
+    overwrite: bool,
+) -> int:
+    input_path = Path(input_file)
+    output_enriched_path = Path(output_enriched)
+    covers_path = Path(covers_dir)
+    manifest_path = Path(output_manifest)
+
+    if not input_path.exists():
+        raise SystemExit(f"No se encontro el archivo de entrada: {input_path}")
+
+    total_rows, downloaded, skipped, errors = fetch_covers(
+        input_path=input_path,
+        output_enriched_path=output_enriched_path,
+        covers_dir=covers_path,
+        manifest_output_path=manifest_path,
+        overwrite=overwrite,
+        limit=limit,
+    )
+    print(f"Fase final completada: {total_rows} filas procesadas")
+    print(f"Portadas descargadas: {downloaded}")
+    print(f"Filas omitidas: {skipped}")
+    print(f"Errores de descarga: {errors}")
+    print(f"Manifest: {manifest_path}")
+    print(f"CSV actualizado: {output_enriched_path}")
+    return 0
+
+
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
@@ -234,6 +424,30 @@ def main() -> int:
             input_file=args.input,
             output_review=args.output_review,
             output_report=args.output_report,
+        )
+    if args.command == "fallback-review":
+        return run_fallback(
+            input_enriched=args.input_enriched,
+            input_review=args.input_review,
+            input_candidates=args.input_candidates,
+            output_overrides=args.output_overrides,
+            output_enriched=args.output_enriched,
+            output_review_remaining=args.output_review_remaining,
+            output_report=args.output_report,
+            min_score=args.min_score,
+            min_title_score=args.min_title_score,
+            min_authors_score=args.min_authors_score,
+            min_margin=args.min_margin,
+            no_online_discovery=args.no_online_discovery,
+        )
+    if args.command == "fetch-covers":
+        return run_fetch_covers(
+            input_file=args.input,
+            output_enriched=args.output_enriched,
+            covers_dir=args.covers_dir,
+            output_manifest=args.output_manifest,
+            limit=args.limit,
+            overwrite=args.overwrite,
         )
 
     raise SystemExit(f"Comando no soportado: {args.command}")

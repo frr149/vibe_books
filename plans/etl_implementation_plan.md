@@ -62,15 +62,41 @@ Umbrales de decisión:
    - porcentaje auto-aceptado,
    - porcentaje pendiente de revisión.
 
+## Fase 4.5: Fallback automático para casos ambiguos
+1. Tomar `data/books_review.csv` y `data/books_candidates.csv`.
+2. Aplicar reglas deterministas de autoaceptación:
+   - score mínimo configurable,
+   - diferencia mínima entre primer y segundo candidato,
+   - ISBN válido (checksum),
+   - compatibilidad básica de idioma/editorial cuando existan.
+3. Generar `data/books_manual_overrides.csv` con decisiones trazables:
+   - `id`, `isbn_13`, `isbn_10`, `source`, `confidence`, `reason`, `rule`.
+4. Aplicar overrides sobre `data/books_enriched.csv` y regenerar:
+   - `data/books_review_remaining.csv`,
+   - `data/books_fallback_report.json`.
+5. Nunca sobreescribir datos existentes de alta confianza; solo completar faltantes o promover `needs_review` cuando las reglas se cumplan.
+
 ## Fase 5: Robustez y calidad
 1. Tests unitarios para:
    - normalización,
    - scoring de matching,
-   - reglas de merge.
+   - reglas de merge/fallback.
 2. Tests de integración con respuestas mock de APIs.
 3. Idempotencia: dos ejecuciones sobre la misma entrada producen igual salida.
 
-## Fase 6: Operación y CLI
+## Fase 6: Descarga de portadas (fase final)
+1. Tomar `data/books_enriched.csv` y resolver portada por ISBN con prioridad:
+   - Librario (si hay token),
+   - Google Books (`q=isbn`),
+   - Open Library (`covers.openlibrary.org`) como fallback.
+2. Descargar imagen local en `data/covers/` con nombre estable por `id` e `isbn`.
+3. Escribir manifiesto `data/covers_manifest.csv` con:
+   - `id`, `isbn`, `cover_url`, `cover_source`, `local_path`, `status`, `error`, `downloaded_at`.
+4. Actualizar `data/books_enriched.csv` con:
+   - `cover_url`, `cover_source`, `cover_local_path`.
+5. No fallar toda la ETL por una portada: registrar error por fila y continuar.
+
+## Fase 7: Operación y CLI
 Crear un comando único:
 
 ```bash
@@ -98,10 +124,14 @@ etl/
   enrich.py
   merge.py
   report.py
+  fallback_review.py
+  covers.py
 tests/
   test_normalize.py
   test_matchers.py
   test_merge.py
+  test_fallback_review.py
+  test_covers.py
 ```
 
 ## Criterios de éxito

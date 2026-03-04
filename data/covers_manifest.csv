@@ -1,0 +1,9 @@
+id,isbn,cover_url,cover_source,local_path,status,error,downloaded_at
+1,9781638352044,https://covers.openlibrary.org/b/isbn/9781638352044-L.jpg,openlibrary,,download_error,invalid_content_type,
+2,,,,,no_isbn,,
+3,9780262377102,https://covers.openlibrary.org/b/isbn/9780262377102-L.jpg,openlibrary,,download_error,invalid_content_type,
+4,9780262046824,https://covers.openlibrary.org/b/isbn/9780262046824-L.jpg,openlibrary,,download_error,invalid_content_type,
+5,9780593185759,https://covers.openlibrary.org/b/isbn/9780593185759-L.jpg,openlibrary,,download_error,invalid_content_type,
+6,9780262510875,https://covers.openlibrary.org/b/isbn/9780262510875-L.jpg,openlibrary,data/covers/6_9780262510875.jpg,downloaded,,2026-03-04T21:52:09.834048+00:00
+7,9781718501676,https://covers.openlibrary.org/b/isbn/9781718501676-L.jpg,openlibrary,,download_error,invalid_content_type,
+8,9781617292231,https://covers.openlibrary.org/b/isbn/9781617292231-L.jpg,openlibrary,data/covers/8_9781617292231.jpg,downloaded,,2026-03-04T21:52:16.518097+00:00
