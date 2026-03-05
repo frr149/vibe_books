@@ -138,8 +138,7 @@ def fetch_covers(
 ) -> tuple[int, int, int, int]:
     with input_path.open(newline="", encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))
-    if limit is not None:
-        rows = rows[:limit]
+    rows_to_process = rows if limit is None else rows[:limit]
 
     own_resolver = False
     if resolver is None:
@@ -152,7 +151,7 @@ def fetch_covers(
     manifest_rows: list[dict[str, str]] = []
 
     try:
-        for row in rows:
+        for row in rows_to_process:
             row.setdefault("cover_url", "")
             row.setdefault("cover_source", "")
             row.setdefault("cover_local_path", "")
@@ -275,5 +274,4 @@ def fetch_covers(
         writer.writeheader()
         writer.writerows(manifest_rows)
 
-    return len(rows), downloaded, skipped, errors
-
+    return len(rows_to_process), downloaded, skipped, errors

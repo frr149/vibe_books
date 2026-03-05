@@ -1,20 +1,21 @@
 id,titulo,autor_o_autores,editorial,idioma,genero,isbn_13,isbn_10,source,source_id,confidence,review_status,metadata_source,metadata_confidence,conflict_notes,enriched_at
-2,Understanding Deep Learning: Application in Rare Event Prediction,Cynthia Rudin,desconocido,ingles,Machine Learning / AI,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-33,Building Scalable Web Apps with Node.js and Express,Azat Mardan; Ravi Kumar Gupta,desconocido,ingles,Web Development,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-37,Day trading y operativa bursatil,Serrano,For Dummies,espanol,Finanzas,9788432903168,8432903167,openlibrary,/works/OL17781304W,0.8776,needs_review,,0.0000,,2026-03-04T21:19:11.242890+00:00
-45,Scheme 9 from Empty Space,Nils M. Holm,desconocido,ingles,Programacion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-51,Magical Haskell,Antti Virtanen,Apress,ingles,Programacion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-59,Introduction to Dependent Types with Idris,David Thrane Christiansen,Manning,ingles,Programacion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-75,The Gods Themselves,Isaac Asimov,desconocido,ingles,Ciencia ficcion,9780394299877,0575129050,openlibrary,/works/OL46395W,0.8500,needs_review,,0.0000,,2026-03-04T21:19:11.242890+00:00
-79,Real-Time Interrupt,James P. Hogan,Baen,ingles,Ciencia ficcion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-82,Un monde hors du temps,Larry Niven,desconocido,frances,Ciencia ficcion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-86,A Cidade e as Estrelas,Arthur C. Clarke,desconocido,portugues,Ciencia ficcion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-98,Ringworld Engineers,Larry Niven,desconocido,espanol,Ciencia ficcion,9783404242399,0575027916,openlibrary,/works/OL510404W,0.8500,needs_review,,0.0000,,2026-03-04T21:19:11.242890+00:00
-100,The Life Engineered,J.-F. Dubeau,desconocido,ingles,Ciencia ficcion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-108,Smalltalk-80: The Language and Its Implementation,Adele Goldberg; David Robson,Addison-Wesley,ingles,Programacion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-112,DuckDB: Up and Running,Michael Lee,O'Reilly,ingles,Data Engineering,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-113,Making Projects with GNU Make,John Graham-Cumming,O'Reilly,ingles,Programacion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-115,Foundations of Computer Science,A.V. Aho; J.D. Ullman,W. H. Freeman,ingles,Computer Science,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-126,Google BigQuery: The Definitive Guide,Lakshmanan; Jordan Tigani,O'Reilly,ingles,Data Engineering,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-127,Information Retrieval: Data Structures and Algorithms,Ricardo Baeza-Yates; Berthier Ribeiro-Neto,Prentice Hall,ingles,Computer Science,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
-129,The Essentials of User Interface Design,Alan Cooper,IDG Books,ingles,Diseno UX,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:19:11.242890+00:00
+2,Understanding Deep Learning: Application in Rare Event Prediction,Cynthia Rudin,desconocido,ingles,Machine Learning / AI,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+22,Generative AI on AWS,Chris Fregly; Antje Barth; Shelbee Eigenbrode,O'Reilly,ingles,Machine Learning / AI,9781098159184,1098159187,google_books,MOTiEAAAQBAJ,1.0000,needs_review,google_books,1.0000,"editorial: base='O'Reilly' vs metadata='O'Reilly Media, Inc.'",2026-03-04T21:58:18.580043+00:00
+33,Building Scalable Web Apps with Node.js and Express,Azat Mardan; Ravi Kumar Gupta,desconocido,ingles,Web Development,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+37,Day trading y operativa bursatil,Serrano,For Dummies,espanol,Finanzas,9788432903168,8432903167,openlibrary,/works/OL17781304W,0.8776,needs_review,,0.0000,,2026-03-04T21:58:18.580043+00:00
+44,The Bitcoin Standard,Saifedean Ammous,Wiley,ingles,Finanzas,9781119473893,1119473896,openlibrary,/works/OL20984004W,1.0000,needs_review,google_books,1.0000,editorial: base='Wiley' vs metadata='John Wiley & Sons',2026-03-04T21:58:18.580043+00:00
+45,Scheme 9 from Empty Space,Nils M. Holm,desconocido,ingles,Programacion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+51,Magical Haskell,Antti Virtanen,Apress,ingles,Programacion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+59,Introduction to Dependent Types with Idris,David Thrane Christiansen,Manning,ingles,Programacion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+75,The Gods Themselves,Isaac Asimov,desconocido,ingles,Ciencia ficcion,9780394299877,0575129050,openlibrary,/works/OL46395W,0.8500,needs_review,,0.0000,,2026-03-04T21:58:18.580043+00:00
+79,Real-Time Interrupt,James P. Hogan,Baen,ingles,Ciencia ficcion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+82,Un monde hors du temps,Larry Niven,desconocido,frances,Ciencia ficcion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+86,A Cidade e as Estrelas,Arthur C. Clarke,desconocido,portugues,Ciencia ficcion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+98,Ringworld Engineers,Larry Niven,desconocido,espanol,Ciencia ficcion,9783404242399,0575027916,openlibrary,/works/OL510404W,0.8500,needs_review,,0.0000,,2026-03-04T21:58:18.580043+00:00
+100,The Life Engineered,J.-F. Dubeau,desconocido,ingles,Ciencia ficcion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+107,Foundations of Python Network Programming,Philip J. Rhodes; John Goerzen,Apress,ingles,Programacion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+108,Smalltalk-80: The Language and Its Implementation,Adele Goldberg; David Robson,Addison-Wesley,ingles,Programacion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+112,DuckDB: Up and Running,Michael Lee,O'Reilly,ingles,Data Engineering,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+113,Making Projects with GNU Make,John Graham-Cumming,O'Reilly,ingles,Programacion,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+115,Foundations of Computer Science,A.V. Aho; J.D. Ullman,W. H. Freeman,ingles,Computer Science,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00
+129,The Essentials of User Interface Design,Alan Cooper,IDG Books,ingles,Diseno UX,,,,,0.0000,unresolved,,0.0000,,2026-03-04T21:58:18.580043+00:00

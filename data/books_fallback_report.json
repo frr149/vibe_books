@@ -1,8 +1,8 @@
 {
   "total_rows": 129,
-  "review_before": 22,
-  "resolved_by_fallback": 3,
-  "review_after": 19,
+  "review_before": 26,
+  "resolved_by_fallback": 6,
+  "review_after": 20,
   "fallback_rules": {
     "min_score": 0.88,
     "min_title_score": 0.9,
@@ -13,20 +13,20 @@
     "total_rows": 129,
     "coverage": {
       "autor_o_autores": 1.0,
-      "editorial": 0.7287,
+      "editorial": 0.7209,
       "idioma": 1.0,
       "genero": 1.0,
-      "isbn": 0.876
+      "isbn": 0.8837
     },
     "review_status_distribution": {
-      "auto_accepted": 110,
-      "unresolved": 16,
-      "needs_review": 3
+      "auto_accepted": 109,
+      "unresolved": 15,
+      "needs_review": 5
     },
     "quality_rates": {
-      "auto_accepted": 0.8527,
-      "needs_review": 0.0233,
-      "unresolved": 0.124
+      "auto_accepted": 0.845,
+      "needs_review": 0.0388,
+      "unresolved": 0.1163
     }
   }
 }
