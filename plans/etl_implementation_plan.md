@@ -10,6 +10,7 @@ Construir una ETL que tome `data/books.csv`, complete datos faltantes (`autor_o_
   - `data/books_candidates.csv`
   - `data/books_enriched.csv`
   - `data/books_review.csv` (pendientes de revisión manual)
+  - `data/books_catalog.db` (SQLite para consulta de catálogo)
 
 ## Diseño de datos (Fase 0)
 Definir esquema enriquecido:
@@ -108,6 +109,24 @@ Capacidades operativas:
 - límites de concurrencia y timeouts,
 - reintentos con backoff para errores transitorios,
 - logging estructurado por etapa.
+
+## Fase 8: Carga en SQLite
+1. Crear `data/books_catalog.db`.
+2. Definir tabla `books` con columnas del CSV enriquecido (`id`, `titulo`, `autor_o_autores`, `editorial`, `idioma`, `genero`, `isbn_13`, `isbn_10`, `source`, `source_id`, `confidence`, `review_status`, `metadata_source`, `metadata_confidence`, `conflict_notes`, `cover_url`, `cover_source`, `cover_local_path`, `enriched_at`).
+3. Cargar/actualizar datos desde `data/books_enriched.csv` (modo idempotente por `id`).
+4. Añadir comando CLI dedicado (`load-sqlite`) y dejar trazabilidad de filas insertadas/actualizadas.
+
+## Implementación inmediata (siguiente iteración)
+- [ ] Fase 7: comando único `run` que encadene fases 1 -> 6.
+- [ ] Logging estructurado por etapa (normalización, resolución ISBN, enrich, revisión, fallback, portadas, sqlite).
+- [ ] Fase 5: tests de integración con mocks de APIs de fuentes.
+- [ ] Fase 5: test de idempotencia end-to-end.
+- [ ] Fase 8: carga de `books_enriched.csv` a SQLite.
+
+## Para más tarde
+- [ ] (2) Caché local de consultas para evitar llamadas repetidas.
+- [ ] (3) Límites de concurrencia (workers/semaforización) además de retries y timeouts.
+- [ ] (6) Refactor de estructura para separar `merge.py`/`test_merge.py` si compensa frente al diseño actual.
 
 ## Estructura propuesta
 ```text
