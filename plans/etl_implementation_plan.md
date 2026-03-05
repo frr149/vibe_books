@@ -139,7 +139,7 @@ Capacidades operativas:
 - [x] Logging estructurado por etapa (normalización, resolución ISBN, enrich, revisión, fallback, portadas, sqlite).
 - [x] Fase 5: tests de integración con mocks de APIs de fuentes.
 - [x] Fase 5: test de idempotencia end-to-end.
-- [ ] Fase 8: carga de `books_enriched.csv` a SQLite con esquema normalizado.
+- [x] Fase 8: carga de `books_enriched.csv` a SQLite con esquema normalizado.
 
 ## Para más tarde
 - [ ] (2) Caché local de consultas para evitar llamadas repetidas.
@@ -163,6 +163,7 @@ etl/
   report.py
   fallback_review.py
   covers.py
+  load_sqlite.py
 tests/
   test_normalize.py
   test_matchers.py

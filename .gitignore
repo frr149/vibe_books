@@ -34,3 +34,6 @@ coverage/
 .turbo/
 .next/
 out/
+
+# Local data artifacts
+data/books_catalog.db

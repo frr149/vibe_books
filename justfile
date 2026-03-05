@@ -14,3 +14,6 @@ check: lint test
 
 pipeline:
     uv run python -m etl.cli run --input data/books.csv --output data/books_enriched.csv
+
+load-sqlite:
+    uv run python -m etl.cli load-sqlite --input data/books_enriched.csv --db-path data/books_catalog.db

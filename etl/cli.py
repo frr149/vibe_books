@@ -7,6 +7,7 @@ from pathlib import Path
 from etl.covers import fetch_covers
 from etl.enrich import enrich_from_isbn
 from etl.fallback_review import run_fallback_review
+from etl.load_sqlite import load_books_to_sqlite
 from etl.logging_utils import configure_logging, log_event
 from etl.normalize import normalize_csv
 from etl.report import run_phase4
@@ -291,6 +292,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--overwrite-covers",
         action="store_true",
         help="Si existe portada local, vuelve a descargarla en fase de portadas.",
+    )
+
+    sqlite_parser = subparsers.add_parser(
+        "load-sqlite",
+        help="Ejecuta la fase final: carga catalogo enriquecido en SQLite.",
+    )
+    sqlite_parser.add_argument(
+        "--input",
+        default="data/books_enriched.csv",
+        help="CSV enriquecido de entrada (default: data/books_enriched.csv).",
+    )
+    sqlite_parser.add_argument(
+        "--db-path",
+        default="data/books_catalog.db",
+        help="Ruta de base de datos SQLite (default: data/books_catalog.db).",
     )
     return parser
 
@@ -675,6 +691,46 @@ def run_pipeline(
     return 0
 
 
+def run_load_sqlite(
+    input_file: str,
+    db_path: str,
+) -> int:
+    started = time.perf_counter()
+    log_event(
+        "load_sqlite",
+        "started",
+        input=input_file,
+        db_path=db_path,
+    )
+    input_path = Path(input_file)
+    database_path = Path(db_path)
+
+    if not input_path.exists():
+        raise SystemExit(f"No se encontro el archivo de entrada: {input_path}")
+
+    rows_read, books_upserted, authors_linked, genres_linked = load_books_to_sqlite(
+        input_path=input_path,
+        database_path=database_path,
+    )
+    print("Fase final SQLite completada")
+    print(f"Filas leidas: {rows_read}")
+    print(f"Libros upsertados: {books_upserted}")
+    print(f"Autores vinculados: {authors_linked}")
+    print(f"Generos vinculados: {genres_linked}")
+    print(f"Base de datos: {database_path}")
+    log_event(
+        "load_sqlite",
+        "completed",
+        rows_read=rows_read,
+        books_upserted=books_upserted,
+        authors_linked=authors_linked,
+        genres_linked=genres_linked,
+        db_path=str(database_path),
+        elapsed_seconds=round(time.perf_counter() - started, 3),
+    )
+    return 0
+
+
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
@@ -741,6 +797,11 @@ def main() -> int:
             min_margin=args.min_margin,
             no_online_discovery=args.no_online_discovery,
             overwrite_covers=args.overwrite_covers,
+        )
+    if args.command == "load-sqlite":
+        return run_load_sqlite(
+            input_file=args.input,
+            db_path=args.db_path,
         )
 
     raise SystemExit(f"Comando no soportado: {args.command}")
