@@ -85,7 +85,7 @@ Umbrales de decisión:
 2. Tests de integración con respuestas mock de APIs.
 3. Idempotencia: dos ejecuciones sobre la misma entrada producen igual salida.
 
-## Fase 6: Descarga de portadas (fase final)
+## Fase 6: Descarga de portadas
 1. Tomar `data/books_enriched.csv` y resolver portada por ISBN con prioridad:
    - Librario (si hay token),
    - Google Books (`q=isbn`),
@@ -110,18 +110,36 @@ Capacidades operativas:
 - reintentos con backoff para errores transitorios,
 - logging estructurado por etapa.
 
-## Fase 8: Carga en SQLite
+## Fase 8: Carga en SQLite (fase final)
 1. Crear `data/books_catalog.db`.
-2. Definir tabla `books` con columnas del CSV enriquecido (`id`, `titulo`, `autor_o_autores`, `editorial`, `idioma`, `genero`, `isbn_13`, `isbn_10`, `source`, `source_id`, `confidence`, `review_status`, `metadata_source`, `metadata_confidence`, `conflict_notes`, `cover_url`, `cover_source`, `cover_local_path`, `enriched_at`).
-3. Cargar/actualizar datos desde `data/books_enriched.csv` (modo idempotente por `id`).
-4. Añadir comando CLI dedicado (`load-sqlite`) y dejar trazabilidad de filas insertadas/actualizadas.
+2. Crear esquema normalizado:
+   - `languages(id, code, nombre, nombre_norm)` con catálogo inicial (`espanol`, `portugues`, `ingles`, `frances`).
+   - `books(id, titulo, editorial, language_id, isbn_13, isbn_10, cover_url, cover_local_path)`.
+   - `authors(id, nombre, nombre_norm)`.
+   - `genres(id, nombre, nombre_norm)`.
+   - `book_authors(book_id, author_id, author_order)`.
+   - `book_genres(book_id, genre_id)`.
+3. Cargar/actualizar desde `data/books_enriched.csv` en modo idempotente:
+   - `books` por `id` (`UPSERT`).
+   - autores con split por `;` y deduplicación por `nombre_norm`.
+   - géneros con split configurable (por defecto `;`) y deduplicación por `nombre_norm`.
+   - refresco de tablas puente por libro (`book_authors`, `book_genres`).
+4. Añadir comando CLI dedicado (`load-sqlite`) y reporte de carga (`rows_read`, `books_upserted`, `authors_linked`, `genres_linked`).
+
+## Decisiones de diseño del esquema SQLite
+1. Normalización N:M en autores y géneros para evitar duplicados y soportar catálogos reales.
+2. `languages` en tabla separada (en vez de texto libre) para integridad referencial y evolución del catálogo de idiomas.
+3. `books` solo con datos de catálogo, sin campos internos de ETL, para mantener el modelo limpio para backend/frontend.
+4. Clave primaria estable `books.id` basada en el `id` del CSV enriquecido para cargas repetibles.
+5. Índices mínimos en `books(titulo)`, `books(language_id)`, `books(isbn_13)`, `books(isbn_10)` y en FKs de tablas puente para consultas de catálogo rápidas.
+6. Reglas de calidad: `UNIQUE` en `nombre_norm` de `authors/genres` y checks básicos de formato ISBN para reducir ruido en ingestión.
 
 ## Implementación inmediata (siguiente iteración)
 - [x] Fase 7: comando único `run` que encadene fases 1 -> 6.
 - [x] Logging estructurado por etapa (normalización, resolución ISBN, enrich, revisión, fallback, portadas, sqlite).
 - [x] Fase 5: tests de integración con mocks de APIs de fuentes.
 - [x] Fase 5: test de idempotencia end-to-end.
-- [ ] Fase 8: carga de `books_enriched.csv` a SQLite.
+- [ ] Fase 8: carga de `books_enriched.csv` a SQLite con esquema normalizado.
 
 ## Para más tarde
 - [ ] (2) Caché local de consultas para evitar llamadas repetidas.

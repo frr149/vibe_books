@@ -33,6 +33,7 @@ For Markdown docs, use clear headings, short sections, and actionable instructio
 - Shell preference: use `fish` for repository task commands and `just` recipes.
 - Avoid `zsh`-specific command syntax in docs, scripts, and examples.
 - Execute project tasks through `just` recipes whenever possible, instead of running raw commands directly.
+- Never execute Python code as an inline command string (for example, `python -c` or heredoc snippets). If Python is needed, create a script file and run it.
 
 ## Testing Guidelines
 Testing is file-integrity based rather than unit-test based.
