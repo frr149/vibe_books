@@ -17,3 +17,6 @@ pipeline:
 
 load-sqlite:
     uv run python -m etl.cli load-sqlite --input data/books_enriched.csv --db-path data/books_catalog.db
+
+api-dev:
+    uv run uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
