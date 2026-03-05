@@ -2,16 +2,17 @@ from __future__ import annotations
 
 import csv
 import json
+from pathlib import Path
 
 from etl.report import run_phase4
 
 
-def test_run_phase4_generates_review_and_report(tmp_path) -> None:
+def test_run_phase4_generates_review_and_report(tmp_path: Path) -> None:
     input_path = tmp_path / "books_enriched.csv"
     review_path = tmp_path / "books_review.csv"
     report_path = tmp_path / "books_quality_report.json"
 
-    rows = [
+    rows: list[dict[str, str]] = [
         {
             "id": "1",
             "titulo": "Libro A",
@@ -93,4 +94,3 @@ def test_run_phase4_generates_review_and_report(tmp_path) -> None:
     assert report["review_status_distribution"]["needs_review"] == 1
     assert report["review_status_distribution"]["unresolved"] == 1
     assert report["coverage"]["isbn"] == 0.6667
-

@@ -95,6 +95,28 @@ def _detect_conflict(current_value: str, candidate_value: str, confidence: float
     return confidence >= 0.85
 
 
+def merge_field(
+    current_value: str,
+    candidate_value: str,
+    candidate_confidence: float,
+    min_confidence: float,
+) -> tuple[str, bool]:
+    return _merge_field(
+        current_value=current_value,
+        candidate_value=candidate_value,
+        candidate_confidence=candidate_confidence,
+        min_confidence=min_confidence,
+    )
+
+
+def detect_conflict(current_value: str, candidate_value: str, confidence: float) -> bool:
+    return _detect_conflict(
+        current_value=current_value,
+        candidate_value=candidate_value,
+        confidence=confidence,
+    )
+
+
 def enrich_from_isbn(
     input_path: Path,
     output_path: Path,
@@ -248,4 +270,3 @@ def enrich_from_isbn(
         openlibrary.close()
         google_books.close()
         librario.close()
-

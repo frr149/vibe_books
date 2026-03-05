@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+from pathlib import Path
 
 from etl.normalize import (
     UNKNOWN_VALUE,
@@ -71,7 +72,7 @@ def test_normalize_row_genera_campos_match() -> None:
     assert normalized.editorial_match == "o reilly"
 
 
-def test_normalize_csv_escribe_salida_y_contador(tmp_path) -> None:
+def test_normalize_csv_escribe_salida_y_contador(tmp_path: Path) -> None:
     input_path = tmp_path / "input.csv"
     output_path = tmp_path / "output.csv"
 

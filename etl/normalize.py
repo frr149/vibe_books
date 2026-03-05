@@ -121,7 +121,7 @@ def compact_spaces(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def normalize_display_text(text: str) -> str:
+def normalize_display_text(text: str | None) -> str:
     if text is None:
         return ""
     text = text.replace("\u2018", "'").replace("\u2019", "'")
@@ -274,4 +274,3 @@ def normalize_csv(input_path: Path, output_path: Path) -> tuple[int, int]:
 
     unknown_publishers = sum(1 for item in rows if item.editorial == UNKNOWN_VALUE)
     return len(rows), unknown_publishers
-

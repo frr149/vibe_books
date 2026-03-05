@@ -5,7 +5,7 @@ import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, cast
 
 import httpx
 
@@ -13,6 +13,32 @@ import httpx
 OPENLIBRARY_COVER_URL = "https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg"
 GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes"
 LIBRARIO_BOOK_URL = "https://api.librario.dev/v1/book/{isbn}"
+
+
+def _as_dict(value: object) -> dict[str, object]:
+    if isinstance(value, dict):
+        result: dict[str, object] = {}
+        typed_value = cast(dict[object, object], value)
+        for key, item in typed_value.items():
+            if isinstance(key, str):
+                result[key] = item
+        return result
+    return {}
+
+
+def _as_list(value: object) -> list[object]:
+    if isinstance(value, list):
+        typed_value = cast(list[object], value)
+        result: list[object] = []
+        for item in typed_value:
+            result.append(item)
+        return result
+    return []
+
+
+def _get_str(mapping: dict[str, object], key: str) -> str:
+    raw_value = mapping.get(key)
+    return raw_value.strip() if isinstance(raw_value, str) else ""
 
 
 class CoverResolver(Protocol):
@@ -37,14 +63,20 @@ class MultiSourceCoverResolver:
     def close(self) -> None:
         self._client.close()
 
-    def _request_json(self, url: str, *, headers: dict[str, str] | None = None, params: dict[str, str] | None = None) -> dict:
+    def _request_json(
+        self,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        params: dict[str, str] | None = None,
+    ) -> dict[str, object]:
         for attempt in range(self._retries + 1):
             try:
                 response = self._client.get(url, headers=headers, params=params)
                 if response.status_code == 404:
                     return {}
                 response.raise_for_status()
-                return response.json()
+                return _as_dict(response.json())
             except Exception:  # noqa: BLE001
                 if attempt < self._retries:
                     time.sleep(0.4 * (2**attempt))
@@ -57,9 +89,8 @@ class MultiSourceCoverResolver:
             LIBRARIO_BOOK_URL.format(isbn=isbn),
             headers={"Authorization": f"Bearer {self._token}"},
         )
-        publication = payload.get("publication", {})
-        cover = publication.get("cover", "")
-        return str(cover or "").strip()
+        publication = _as_dict(payload.get("publication"))
+        return _get_str(publication, "cover")
 
     def _resolve_from_google_books(self, isbn: str) -> str:
         payload = self._request_json(
@@ -70,13 +101,14 @@ class MultiSourceCoverResolver:
                 "maxResults": "1",
             },
         )
-        items = payload.get("items", [])
+        items = _as_list(payload.get("items"))
         if not items:
             return ""
-        volume_info = items[0].get("volumeInfo", {})
-        image_links = volume_info.get("imageLinks", {})
+        first_item = _as_dict(items[0])
+        volume_info = _as_dict(first_item.get("volumeInfo"))
+        image_links = _as_dict(volume_info.get("imageLinks"))
         for key in ("extraLarge", "large", "medium", "small", "thumbnail", "smallThumbnail"):
-            url = str(image_links.get(key, "")).strip()
+            url = _get_str(image_links, key)
             if url:
                 return url.replace("http://", "https://")
         return ""

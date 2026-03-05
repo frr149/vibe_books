@@ -133,7 +133,7 @@ def resolve_isbn(
 
         for book in books:
             author_query = _first_author(book.autor_o_autores)
-            raw_candidates = []
+            raw_candidates: list[SourceBook] = []
             raw_candidates.extend(openlibrary.search(book.titulo, author_query, limit=10))
             raw_candidates.extend(google_books.search(book.titulo, author_query, limit=10))
             source_candidates = _dedupe_source_candidates(raw_candidates)
@@ -226,4 +226,3 @@ def resolve_isbn(
     finally:
         openlibrary.close()
         google_books.close()
-

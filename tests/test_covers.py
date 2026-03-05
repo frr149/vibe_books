@@ -3,6 +3,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+from pytest import MonkeyPatch
+
 from etl.covers import fetch_covers
 
 
@@ -16,13 +18,16 @@ class DummyResolver:
         return None
 
 
-def test_fetch_covers_writes_manifest_and_updates_csv(tmp_path, monkeypatch) -> None:
+def test_fetch_covers_writes_manifest_and_updates_csv(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
     input_path = tmp_path / "books_enriched.csv"
     output_path = tmp_path / "books_enriched_out.csv"
     covers_dir = tmp_path / "covers"
     manifest_path = tmp_path / "covers_manifest.csv"
 
-    rows = [
+    rows: list[dict[str, str]] = [
         {
             "id": "1",
             "titulo": "Libro 1",
@@ -98,4 +103,3 @@ def test_fetch_covers_writes_manifest_and_updates_csv(tmp_path, monkeypatch) -> 
     assert len(manifest_rows) == 2
     assert manifest_rows[0]["status"] == "downloaded"
     assert manifest_rows[1]["status"] == "no_isbn"
-

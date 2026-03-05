@@ -29,6 +29,11 @@ Use consistent, predictable naming for assets:
 
 For Markdown docs, use clear headings, short sections, and actionable instructions.
 
+## Agent-Specific Instructions
+- Shell preference: use `fish` for repository task commands and `just` recipes.
+- Avoid `zsh`-specific command syntax in docs, scripts, and examples.
+- Execute project tasks through `just` recipes whenever possible, instead of running raw commands directly.
+
 ## Testing Guidelines
 Testing is file-integrity based rather than unit-test based.
 

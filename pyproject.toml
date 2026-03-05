@@ -9,5 +9,10 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "basedpyright>=1.38.2",
     "pytest>=9.0.2",
 ]
+
+[tool.basedpyright]
+pythonVersion = "3.14"
+typeCheckingMode = "strict"

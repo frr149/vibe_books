@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import csv
 import json
+from pathlib import Path
 
 from etl.fallback_review import run_fallback_review
 
 
-def test_run_fallback_review_applies_overrides_and_regenerates_review(tmp_path) -> None:
+def test_run_fallback_review_applies_overrides_and_regenerates_review(tmp_path: Path) -> None:
     enriched_input = tmp_path / "books_enriched.csv"
     review_input = tmp_path / "books_review.csv"
     candidates_input = tmp_path / "books_candidates.csv"
@@ -15,7 +16,7 @@ def test_run_fallback_review_applies_overrides_and_regenerates_review(tmp_path) 
     review_remaining_output = tmp_path / "books_review_remaining.csv"
     report_output = tmp_path / "books_fallback_report.json"
 
-    enriched_rows = [
+    enriched_rows: list[dict[str, str]] = [
         {
             "id": "10",
             "titulo": "Higher-Order Perl",
@@ -54,12 +55,12 @@ def test_run_fallback_review_applies_overrides_and_regenerates_review(tmp_path) 
         },
     ]
 
-    review_rows = [
+    review_rows: list[dict[str, str]] = [
         dict(enriched_rows[0]),
         dict(enriched_rows[1]),
     ]
 
-    candidates_rows = [
+    candidates_rows: list[dict[str, str]] = [
         {
             "input_id": "10",
             "titulo_input": "Higher-Order Perl",

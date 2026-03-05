@@ -55,7 +55,7 @@ def _clean_isbn(value: str) -> str:
 def _isbn_is_valid(candidate: dict[str, str]) -> bool:
     isbn13 = _clean_isbn(candidate.get("isbn_13", ""))
     isbn10 = _clean_isbn(candidate.get("isbn_10", ""))
-    return (isbn13 and _is_valid_isbn13(isbn13)) or (isbn10 and _is_valid_isbn10(isbn10))
+    return (bool(isbn13) and _is_valid_isbn13(isbn13)) or (bool(isbn10) and _is_valid_isbn10(isbn10))
 
 
 def _publisher_compatible(base_value: str, candidate_value: str) -> bool:
