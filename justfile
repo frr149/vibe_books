@@ -11,3 +11,6 @@ test:
     uv run pytest -q
 
 check: lint test
+
+pipeline:
+    uv run python -m etl.cli run --input data/books.csv --output data/books_enriched.csv
