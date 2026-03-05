@@ -117,10 +117,10 @@ Capacidades operativas:
 4. Añadir comando CLI dedicado (`load-sqlite`) y dejar trazabilidad de filas insertadas/actualizadas.
 
 ## Implementación inmediata (siguiente iteración)
-- [ ] Fase 7: comando único `run` que encadene fases 1 -> 6.
-- [ ] Logging estructurado por etapa (normalización, resolución ISBN, enrich, revisión, fallback, portadas, sqlite).
-- [ ] Fase 5: tests de integración con mocks de APIs de fuentes.
-- [ ] Fase 5: test de idempotencia end-to-end.
+- [x] Fase 7: comando único `run` que encadene fases 1 -> 6.
+- [x] Logging estructurado por etapa (normalización, resolución ISBN, enrich, revisión, fallback, portadas, sqlite).
+- [x] Fase 5: tests de integración con mocks de APIs de fuentes.
+- [x] Fase 5: test de idempotencia end-to-end.
 - [ ] Fase 8: carga de `books_enriched.csv` a SQLite.
 
 ## Para más tarde

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import time
 from pathlib import Path
 
 from etl.covers import fetch_covers
 from etl.enrich import enrich_from_isbn
 from etl.fallback_review import run_fallback_review
+from etl.logging_utils import configure_logging, log_event
 from etl.normalize import normalize_csv
 from etl.report import run_phase4
 from etl.resolve_isbn import resolve_isbn
@@ -13,6 +15,12 @@ from etl.resolve_isbn import resolve_isbn
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="CLI de ETL para catalogo de libros.")
+    parser.add_argument(
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="Nivel de logging estructurado (default: INFO).",
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     normalize_parser = subparsers.add_parser(
@@ -218,10 +226,78 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Si existe portada local, vuelve a descargarla.",
     )
+
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Ejecuta el pipeline completo (Fases 1-6) en secuencia.",
+    )
+    run_parser.add_argument(
+        "--input",
+        default="data/books.csv",
+        help="CSV de entrada original (default: data/books.csv).",
+    )
+    run_parser.add_argument(
+        "--output",
+        default="data/books_enriched.csv",
+        help="CSV enriquecido final (default: data/books_enriched.csv).",
+    )
+    run_parser.add_argument(
+        "--min-confidence",
+        type=float,
+        default=0.75,
+        help="Score minimo para aceptar ISBN/rellenos (default: 0.75).",
+    )
+    run_parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Limita filas procesadas para pruebas.",
+    )
+    run_parser.add_argument(
+        "--librario-token",
+        default=None,
+        help="Token de Librario. Si no se envia, usa LIBRARIO_API_TOKEN.",
+    )
+    run_parser.add_argument(
+        "--min-score",
+        type=float,
+        default=0.88,
+        help="Score minimo fallback (default: 0.88).",
+    )
+    run_parser.add_argument(
+        "--min-title-score",
+        type=float,
+        default=0.90,
+        help="Score minimo de titulo fallback (default: 0.90).",
+    )
+    run_parser.add_argument(
+        "--min-authors-score",
+        type=float,
+        default=0.40,
+        help="Score minimo de autores fallback (default: 0.40).",
+    )
+    run_parser.add_argument(
+        "--min-margin",
+        type=float,
+        default=0.03,
+        help="Margen minimo fallback entre top-1 y top-2 (default: 0.03).",
+    )
+    run_parser.add_argument(
+        "--no-online-discovery",
+        action="store_true",
+        help="Desactiva busqueda online adicional en fallback.",
+    )
+    run_parser.add_argument(
+        "--overwrite-covers",
+        action="store_true",
+        help="Si existe portada local, vuelve a descargarla en fase de portadas.",
+    )
     return parser
 
 
 def run_normalize(input_file: str, output_file: str) -> int:
+    started = time.perf_counter()
+    log_event("normalize", "started", input=input_file, output=output_file)
     input_path = Path(input_file)
     output_path = Path(output_file)
 
@@ -232,6 +308,14 @@ def run_normalize(input_file: str, output_file: str) -> int:
     print(f"Fase 1 completada: {rows} filas normalizadas")
     print(f"Editoriales desconocidas: {unknown_publishers}")
     print(f"Salida: {output_path}")
+    log_event(
+        "normalize",
+        "completed",
+        rows=rows,
+        unknown_publishers=unknown_publishers,
+        output=str(output_path),
+        elapsed_seconds=round(time.perf_counter() - started, 3),
+    )
     return 0
 
 
@@ -242,6 +326,16 @@ def run_resolve_isbn(
     min_confidence: float,
     limit: int | None,
 ) -> int:
+    started = time.perf_counter()
+    log_event(
+        "resolve_isbn",
+        "started",
+        input=input_file,
+        output_candidates=output_candidates,
+        output_resolved=output_resolved,
+        min_confidence=min_confidence,
+        limit=limit,
+    )
     input_path = Path(input_file)
     candidates_path = Path(output_candidates)
     resolved_path = Path(output_resolved)
@@ -260,6 +354,15 @@ def run_resolve_isbn(
     print(f"ISBN aceptados (score >= {min_confidence:.2f}): {resolved}")
     print(f"Salida candidatos: {candidates_path}")
     print(f"Salida resueltos: {resolved_path}")
+    log_event(
+        "resolve_isbn",
+        "completed",
+        rows=rows,
+        resolved=resolved,
+        output_candidates=str(candidates_path),
+        output_resolved=str(resolved_path),
+        elapsed_seconds=round(time.perf_counter() - started, 3),
+    )
     return 0
 
 
@@ -270,6 +373,15 @@ def run_enrich(
     limit: int | None,
     librario_token: str | None,
 ) -> int:
+    started = time.perf_counter()
+    log_event(
+        "enrich",
+        "started",
+        input=input_file,
+        output=output_file,
+        min_confidence=min_confidence,
+        limit=limit,
+    )
     input_path = Path(input_file)
     output_path = Path(output_file)
 
@@ -287,6 +399,15 @@ def run_enrich(
     print(f"Campos faltantes completados: {filled_fields}")
     print(f"Conflictos detectados: {conflicts}")
     print(f"Salida enriquecida: {output_path}")
+    log_event(
+        "enrich",
+        "completed",
+        rows=rows,
+        filled_fields=filled_fields,
+        conflicts=conflicts,
+        output=str(output_path),
+        elapsed_seconds=round(time.perf_counter() - started, 3),
+    )
     return 0
 
 
@@ -295,6 +416,14 @@ def run_review_and_report(
     output_review: str,
     output_report: str,
 ) -> int:
+    started = time.perf_counter()
+    log_event(
+        "phase4",
+        "started",
+        input=input_file,
+        output_review=output_review,
+        output_report=output_report,
+    )
     input_path = Path(input_file)
     review_path = Path(output_review)
     report_path = Path(output_report)
@@ -311,6 +440,15 @@ def run_review_and_report(
     print(f"Filas en cola de revision: {review_rows}")
     print(f"Salida revision: {review_path}")
     print(f"Salida reporte: {report_path}")
+    log_event(
+        "phase4",
+        "completed",
+        total=total,
+        review_rows=review_rows,
+        output_review=str(review_path),
+        output_report=str(report_path),
+        elapsed_seconds=round(time.perf_counter() - started, 3),
+    )
     return 0
 
 
@@ -328,6 +466,17 @@ def run_fallback(
     min_margin: float,
     no_online_discovery: bool,
 ) -> int:
+    started = time.perf_counter()
+    log_event(
+        "fallback_review",
+        "started",
+        input_enriched=input_enriched,
+        input_review=input_review,
+        input_candidates=input_candidates,
+        output_enriched=output_enriched,
+        output_review_remaining=output_review_remaining,
+        output_report=output_report,
+    )
     enriched_input_path = Path(input_enriched)
     review_input_path = Path(input_review)
     candidates_input_path = Path(input_candidates)
@@ -361,6 +510,17 @@ def run_fallback(
     print(f"CSV actualizado: {enriched_output_path}")
     print(f"Revision restante: {review_remaining_output_path}")
     print(f"Reporte fallback: {report_output_path}")
+    log_event(
+        "fallback_review",
+        "completed",
+        total_rows=total_rows,
+        resolved_by_fallback=resolved_by_fallback,
+        review_remaining=review_remaining,
+        output_enriched=str(enriched_output_path),
+        output_review_remaining=str(review_remaining_output_path),
+        output_report=str(report_output_path),
+        elapsed_seconds=round(time.perf_counter() - started, 3),
+    )
     return 0
 
 
@@ -372,6 +532,17 @@ def run_fetch_covers(
     limit: int | None,
     overwrite: bool,
 ) -> int:
+    started = time.perf_counter()
+    log_event(
+        "fetch_covers",
+        "started",
+        input=input_file,
+        output_enriched=output_enriched,
+        covers_dir=covers_dir,
+        output_manifest=output_manifest,
+        limit=limit,
+        overwrite=overwrite,
+    )
     input_path = Path(input_file)
     output_enriched_path = Path(output_enriched)
     covers_path = Path(covers_dir)
@@ -394,12 +565,120 @@ def run_fetch_covers(
     print(f"Errores de descarga: {errors}")
     print(f"Manifest: {manifest_path}")
     print(f"CSV actualizado: {output_enriched_path}")
+    log_event(
+        "fetch_covers",
+        "completed",
+        total_rows=total_rows,
+        downloaded=downloaded,
+        skipped=skipped,
+        errors=errors,
+        output_enriched=str(output_enriched_path),
+        output_manifest=str(manifest_path),
+        elapsed_seconds=round(time.perf_counter() - started, 3),
+    )
+    return 0
+
+
+def run_pipeline(
+    input_file: str,
+    output_file: str,
+    min_confidence: float,
+    limit: int | None,
+    librario_token: str | None,
+    min_score: float,
+    min_title_score: float,
+    min_authors_score: float,
+    min_margin: float,
+    no_online_discovery: bool,
+    overwrite_covers: bool,
+) -> int:
+    started = time.perf_counter()
+    input_path = Path(input_file)
+    enriched_output_path = Path(output_file)
+    base_dir = enriched_output_path.parent
+
+    if not input_path.exists():
+        raise SystemExit(f"No se encontro el archivo de entrada: {input_path}")
+
+    normalized_path = base_dir / "books_normalized.csv"
+    candidates_path = base_dir / "books_candidates.csv"
+    resolved_path = base_dir / "books_isbn_resolved.csv"
+    review_path = base_dir / "books_review.csv"
+    quality_report_path = base_dir / "books_quality_report.json"
+    overrides_path = base_dir / "books_manual_overrides.csv"
+    review_remaining_path = base_dir / "books_review_remaining.csv"
+    fallback_report_path = base_dir / "books_fallback_report.json"
+    covers_dir = base_dir / "covers"
+    covers_manifest_path = base_dir / "covers_manifest.csv"
+
+    log_event(
+        "pipeline",
+        "started",
+        input=str(input_path),
+        output=str(enriched_output_path),
+        limit=limit,
+        min_confidence=min_confidence,
+    )
+
+    run_normalize(str(input_path), str(normalized_path))
+    run_resolve_isbn(
+        input_file=str(normalized_path),
+        output_candidates=str(candidates_path),
+        output_resolved=str(resolved_path),
+        min_confidence=min_confidence,
+        limit=limit,
+    )
+    run_enrich(
+        input_file=str(resolved_path),
+        output_file=str(enriched_output_path),
+        min_confidence=min_confidence,
+        limit=limit,
+        librario_token=librario_token,
+    )
+    run_review_and_report(
+        input_file=str(enriched_output_path),
+        output_review=str(review_path),
+        output_report=str(quality_report_path),
+    )
+    run_fallback(
+        input_enriched=str(enriched_output_path),
+        input_review=str(review_path),
+        input_candidates=str(candidates_path),
+        output_overrides=str(overrides_path),
+        output_enriched=str(enriched_output_path),
+        output_review_remaining=str(review_remaining_path),
+        output_report=str(fallback_report_path),
+        min_score=min_score,
+        min_title_score=min_title_score,
+        min_authors_score=min_authors_score,
+        min_margin=min_margin,
+        no_online_discovery=no_online_discovery,
+    )
+    run_fetch_covers(
+        input_file=str(enriched_output_path),
+        output_enriched=str(enriched_output_path),
+        covers_dir=str(covers_dir),
+        output_manifest=str(covers_manifest_path),
+        limit=limit,
+        overwrite=overwrite_covers,
+    )
+
+    print("Pipeline completo finalizado")
+    print(f"Salida final: {enriched_output_path}")
+    log_event(
+        "pipeline",
+        "completed",
+        output=str(enriched_output_path),
+        covers_manifest=str(covers_manifest_path),
+        elapsed_seconds=round(time.perf_counter() - started, 3),
+    )
     return 0
 
 
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
+    configure_logging(args.log_level)
 
     if args.command == "normalize":
         return run_normalize(args.input, args.output)
@@ -448,6 +727,20 @@ def main() -> int:
             output_manifest=args.output_manifest,
             limit=args.limit,
             overwrite=args.overwrite,
+        )
+    if args.command == "run":
+        return run_pipeline(
+            input_file=args.input,
+            output_file=args.output,
+            min_confidence=args.min_confidence,
+            limit=args.limit,
+            librario_token=args.librario_token,
+            min_score=args.min_score,
+            min_title_score=args.min_title_score,
+            min_authors_score=args.min_authors_score,
+            min_margin=args.min_margin,
+            no_online_discovery=args.no_online_discovery,
+            overwrite_covers=args.overwrite_covers,
         )
 
     raise SystemExit(f"Comando no soportado: {args.command}")
