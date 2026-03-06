@@ -62,8 +62,7 @@ Publicar una API REST mínima, estable y verificable de forma autónoma (sin fro
 1. Tests de integración de endpoints (casos felices + errores).
 2. Documentación OpenAPI revisada (`/docs`).
 3. Añadir receta `just` para comprobar que no hay endpoints rotos en la API publicada localmente.
-4. Añadir receta `just` con `lychee` para validar enlaces en documentación Markdown.
-5. Checklist de rendimiento básico y observabilidad mínima (logs de request).
+4. Añadir receta `just api-test` para ejecutar solo la batería de tests de API.
 
 ## Recetas `just` objetivo para API MVP
 1. `just api-dev`
@@ -72,27 +71,25 @@ Publicar una API REST mínima, estable y verificable de forma autónoma (sin fro
    - Ejecuta tests de endpoints de la API.
 3. `just api-check-links`
    - Valida endpoints críticos del servicio (`/api/v1/health`, `/openapi.json`, `/docs`, `/api/v1/books`, etc.).
-4. `just check-links-docs`
-   - Ejecuta `lychee` sobre Markdown y valida enlaces de documentación.
 
 ## Estrategia de validación autónoma (sin frontend)
 1. Validación funcional del API:
    - Tests de integración (`pytest` + cliente HTTP) para contrato, filtros, paginación y errores.
 2. Smoke checks del servicio en ejecución local:
    - `just api-check-links` para confirmar que endpoints críticos responden `2xx`.
-3. Validación de enlaces de documentación:
-   - `just check-links-docs` con `lychee`.
-4. Regla de decisión:
-   - `lychee` se usa para enlaces estáticos/documentación.
-   - Los endpoints API se validan con tests HTTP y smoke checks, no solo con `lychee`.
+3. Regla de decisión:
+   - Sin frontend, se priorizan tests HTTP + smoke checks de endpoints.
 
 ## Criterios de aceptación del MVP
 1. La API responde correctamente sin depender de frontend.
 2. Los 6 endpoints mínimos están implementados y cubiertos por tests de integración.
 3. Paginación, filtros y formato de errores son consistentes y verificables por tests.
 4. `just api-check-links` pasa en local (sin endpoints rotos en superficie API).
-5. `just check-links-docs` (lychee) pasa sin enlaces rotos en documentación.
-6. OpenAPI (`/openapi.json`) refleja el contrato real de los endpoints.
+5. OpenAPI (`/openapi.json`) refleja el contrato real de los endpoints.
+
+## Para más tarde (post-MVP)
+- Validar enlaces de documentación con `lychee`.
+- Checklist de rendimiento básico y observabilidad mínima (logs de request).
 
 ## Fuera de alcance (por ahora)
 - Autenticación/autorización.

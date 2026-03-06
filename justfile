@@ -21,6 +21,12 @@ load-sqlite:
 api-dev:
     uv run uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 
+api-test:
+    uv run pytest -q tests/test_api_*.py tests/contract
+
+api-check-links:
+    uv run python scripts/api_check_links.py --base-url http://127.0.0.1:8000
+
 export-api-fixtures:
     uv run python scripts/export_api_fixtures.py --db-path data/books_catalog.db --output-dir tests/fixtures/real
 
