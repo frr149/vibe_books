@@ -105,3 +105,7 @@ export type BookDetail = z.infer<typeof BookDetailSchema>
 export type AuthorListResponse = z.infer<typeof AuthorListResponseSchema>
 export type GenreListResponse = z.infer<typeof GenreListResponseSchema>
 export type LanguageListResponse = z.infer<typeof LanguageListResponseSchema>
+export type BookListItem = z.infer<typeof BookListItemSchema>
+export type Author = z.infer<typeof AuthorSchema>
+export type Genre = z.infer<typeof GenreSchema>
+export type Language = z.infer<typeof LanguageSchema>
