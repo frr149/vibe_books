@@ -1,0 +1,31 @@
+{
+  "id": 2,
+  "titulo": "Understanding Deep Learning: Application in Rare Event Prediction",
+  "editorial": null,
+  "idioma": "ingles",
+  "isbn_13": null,
+  "isbn_10": null,
+  "cover_url": null,
+  "cover_local_path": null,
+  "authors": [
+    {
+      "id": 2,
+      "nombre": "Cynthia Rudin",
+      "slug": "cynthia-rudin",
+      "book_count": 1
+    }
+  ],
+  "genres": [
+    {
+      "id": 1,
+      "nombre": "Machine Learning / AI",
+      "slug": "machine-learning-ai",
+      "book_count": 18
+    }
+  ],
+  "language": {
+    "id": 3,
+    "code": "en",
+    "nombre": "ingles"
+  }
+}

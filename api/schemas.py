@@ -1,29 +1,33 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
-class Author(BaseModel):
+class StrictSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class Author(StrictSchema):
     id: int
     nombre: str
     slug: str
     book_count: int
 
 
-class Genre(BaseModel):
+class Genre(StrictSchema):
     id: int
     nombre: str
     slug: str
     book_count: int
 
 
-class Language(BaseModel):
+class Language(StrictSchema):
     id: int
     code: str
     nombre: str
 
 
-class BookListItem(BaseModel):
+class BookListItem(StrictSchema):
     id: int
     titulo: str
     editorial: str | None
@@ -33,7 +37,7 @@ class BookListItem(BaseModel):
     cover_url: str | None
 
 
-class BookDetail(BaseModel):
+class BookDetail(StrictSchema):
     id: int
     titulo: str
     editorial: str | None

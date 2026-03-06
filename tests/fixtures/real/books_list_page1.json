@@ -1,0 +1,37 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "titulo": "Deep Learning with Python",
+      "editorial": "Manning",
+      "idioma": "ingles",
+      "isbn_13": "9781638352044",
+      "isbn_10": "1638352046",
+      "cover_url": null
+    },
+    {
+      "id": 2,
+      "titulo": "Understanding Deep Learning: Application in Rare Event Prediction",
+      "editorial": null,
+      "idioma": "ingles",
+      "isbn_13": null,
+      "isbn_10": null,
+      "cover_url": null
+    },
+    {
+      "id": 3,
+      "titulo": "Understanding Deep Learning",
+      "editorial": "MIT Press",
+      "idioma": "ingles",
+      "isbn_13": "9780262377102",
+      "isbn_10": "0262377101",
+      "cover_url": null
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 3,
+    "total": 129,
+    "total_pages": 43
+  }
+}

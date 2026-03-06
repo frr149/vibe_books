@@ -1,0 +1,31 @@
+{
+  "id": 1,
+  "titulo": "Deep Learning with Python",
+  "editorial": "Manning",
+  "idioma": "ingles",
+  "isbn_13": "9781638352044",
+  "isbn_10": "1638352046",
+  "cover_url": null,
+  "cover_local_path": "data/covers/1_9781638352044.jpg",
+  "authors": [
+    {
+      "id": 1,
+      "nombre": "Francois Chollet",
+      "slug": "francois-chollet",
+      "book_count": 1
+    }
+  ],
+  "genres": [
+    {
+      "id": 1,
+      "nombre": "Machine Learning / AI",
+      "slug": "machine-learning-ai",
+      "book_count": 18
+    }
+  ],
+  "language": {
+    "id": 3,
+    "code": "en",
+    "nombre": "ingles"
+  }
+}

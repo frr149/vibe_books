@@ -56,3 +56,19 @@ def test_book_detail_supports_nested_taxonomies() -> None:
     assert detail.language.code == "en"
     assert len(detail.authors) == 1
     assert len(detail.genres) == 2
+
+
+def test_schemas_forbid_unknown_fields() -> None:
+    with raises(ValidationError):
+        BookListItem.model_validate(
+            {
+                "id": 1,
+                "titulo": "Deep Learning with Python",
+                "editorial": "Manning",
+                "idioma": "ingles",
+                "isbn_13": "9781617296864",
+                "isbn_10": "1617296864",
+                "cover_url": None,
+                "phantom_field": "inventado",
+            }
+        )
