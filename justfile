@@ -32,3 +32,18 @@ export-api-fixtures:
 
 doctor-contract:
     uv run pytest -q tests/contract
+
+web-check-env:
+    uv run python scripts/web_check_env.py
+
+web-install:
+    cd apps/web && pnpm install
+
+web-dev:
+    cd apps/web && pnpm dev --host 127.0.0.1 --port 5173
+
+web-build:
+    cd apps/web && pnpm build
+
+web-lint:
+    cd apps/web && pnpm lint
