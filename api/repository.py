@@ -203,3 +203,76 @@ class CatalogRepository:
             genres=genres,
             language=language,
         )
+
+    def list_authors(self) -> list[Author]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT a.id, a.nombre, a.nombre_norm, COUNT(DISTINCT ba.book_id) AS book_count
+                FROM authors a
+                JOIN book_authors ba ON ba.author_id = a.id
+                GROUP BY a.id, a.nombre, a.nombre_norm
+                ORDER BY a.nombre
+                """
+            ).fetchall()
+
+        items: list[Author] = []
+        for row in rows:
+            name_norm = str(row["nombre_norm"])
+            items.append(
+                Author(
+                    id=int(row["id"]),
+                    nombre=str(row["nombre"]),
+                    slug=_slug_from_norm(name_norm),
+                    book_count=int(row["book_count"]),
+                )
+            )
+        return items
+
+    def list_genres(self) -> list[Genre]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT g.id, g.nombre, g.nombre_norm, COUNT(DISTINCT bg.book_id) AS book_count
+                FROM genres g
+                JOIN book_genres bg ON bg.genre_id = g.id
+                GROUP BY g.id, g.nombre, g.nombre_norm
+                ORDER BY g.nombre
+                """
+            ).fetchall()
+
+        items: list[Genre] = []
+        for row in rows:
+            name_norm = str(row["nombre_norm"])
+            items.append(
+                Genre(
+                    id=int(row["id"]),
+                    nombre=str(row["nombre"]),
+                    slug=_slug_from_norm(name_norm),
+                    book_count=int(row["book_count"]),
+                )
+            )
+        return items
+
+    def list_languages(self) -> list[Language]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT l.id, l.code, l.nombre
+                FROM languages l
+                JOIN books b ON b.language_id = l.id
+                GROUP BY l.id, l.code, l.nombre
+                ORDER BY l.nombre
+                """
+            ).fetchall()
+
+        items: list[Language] = []
+        for row in rows:
+            items.append(
+                Language(
+                    id=int(row["id"]),
+                    code=str(row["code"]),
+                    nombre=str(row["nombre"]),
+                )
+            )
+        return items

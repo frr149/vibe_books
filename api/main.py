@@ -123,6 +123,57 @@ def get_book_detail(book_id: int) -> JSONResponse:
     )
 
 
+@api_router.get("/authors")
+def list_authors() -> JSONResponse:
+    try:
+        repository = CatalogRepository(DB_PATH)
+        items = repository.list_authors()
+    except sqlite3.Error:
+        return _error_response(
+            status_code=503,
+            code="database_unavailable",
+            message="No se pudo consultar la base de datos",
+        )
+    return JSONResponse(
+        status_code=200,
+        content={"items": [item.model_dump() for item in items]},
+    )
+
+
+@api_router.get("/genres")
+def list_genres() -> JSONResponse:
+    try:
+        repository = CatalogRepository(DB_PATH)
+        items = repository.list_genres()
+    except sqlite3.Error:
+        return _error_response(
+            status_code=503,
+            code="database_unavailable",
+            message="No se pudo consultar la base de datos",
+        )
+    return JSONResponse(
+        status_code=200,
+        content={"items": [item.model_dump() for item in items]},
+    )
+
+
+@api_router.get("/languages")
+def list_languages() -> JSONResponse:
+    try:
+        repository = CatalogRepository(DB_PATH)
+        items = repository.list_languages()
+    except sqlite3.Error:
+        return _error_response(
+            status_code=503,
+            code="database_unavailable",
+            message="No se pudo consultar la base de datos",
+        )
+    return JSONResponse(
+        status_code=200,
+        content={"items": [item.model_dump() for item in items]},
+    )
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="Vibe Books API", version="0.1.0")
     app.include_router(api_router)

@@ -21,6 +21,9 @@ Ventajas:
 - `bruno/vibe-books/Health/health.bru`: endpoint de salud.
 - `bruno/vibe-books/Books/list-books.bru`: listado con búsqueda.
 - `bruno/vibe-books/Books/book-detail.bru`: detalle por ID.
+- `bruno/vibe-books/Taxonomies/list-authors.bru`: catálogo de autores.
+- `bruno/vibe-books/Taxonomies/list-genres.bru`: catálogo de géneros.
+- `bruno/vibe-books/Taxonomies/list-languages.bru`: catálogo de idiomas.
 
 Los archivos `.bru` son las peticiones que Bruno ejecuta.
 
@@ -44,6 +47,7 @@ just api-dev
 5. Ejecuta `Health` para comprobar que la API responde.
 6. Ejecuta `List Books` para ver resultados paginados.
 7. Ejecuta `Book Detail` para ver un libro concreto (`/books/1`).
+8. Ejecuta `List Authors`, `List Genres` y `List Languages` para explorar taxonomías.
 
 ## Ajustes habituales
 

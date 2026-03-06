@@ -7,6 +7,9 @@ Colección mínima para explorar la API sin frontend.
 - `Health/health.bru`
 - `Books/list-books.bru`
 - `Books/book-detail.bru`
+- `Taxonomies/list-authors.bru`
+- `Taxonomies/list-genres.bru`
+- `Taxonomies/list-languages.bru`
 
 ## Uso rápido
 
