@@ -47,3 +47,6 @@ web-build:
 
 web-lint:
     cd apps/web && pnpm lint
+
+web-test:
+    cd apps/web && pnpm test
