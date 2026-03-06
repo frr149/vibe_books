@@ -13,13 +13,16 @@ Publicar una API REST mínima, estable y verificable de forma autónoma (sin fro
    - Para comprobar disponibilidad de la API y de la conexión SQLite.
 2. `GET /api/v1/books`
    - Endpoint principal de listado para el catálogo.
-   - Soporta `page`, `page_size`, `q`, `language`, `author_id`, `genre_id`, `has_isbn`.
+   - Soporta `page`, `page_size`, `q`, `language`, `author`, `genre`, `has_isbn`.
+   - Opcionalmente puede aceptar `author_id` y `genre_id` para clientes internos o casos de rendimiento.
 3. `GET /api/v1/books/{book_id}`
    - Vista de detalle (incluye autores, géneros, idioma y portadas).
 4. `GET /api/v1/authors`
    - Poblar filtros/facetas del frontend y navegación por autor.
+   - Debe devolver al menos: `id`, `nombre`, `slug`/`nombre_norm`, `book_count`.
 5. `GET /api/v1/genres`
    - Poblar filtros por género y navegación temática.
+   - Debe devolver al menos: `id`, `nombre`, `slug`/`nombre_norm`, `book_count`.
 6. `GET /api/v1/languages`
    - Poblar selector de idioma desde catálogo normalizado (`languages`).
 
@@ -40,7 +43,10 @@ Publicar una API REST mínima, estable y verificable de forma autónoma (sin fro
 ### Fase 1: Contrato y base API
 1. Definir esquemas Pydantic de `BookListItem`, `BookDetail`, `Author`, `Genre`, `Language`.
 2. Definir convención de errores y límites de paginación.
-3. Crear capa de acceso SQLite (queries parametrizadas).
+3. Definir política de identificadores públicos:
+   - IDs expuestos en API se consideran estables a nivel de contrato.
+   - Filtros legibles (`author`, `genre`) disponibles para no obligar al cliente a conocer IDs.
+4. Crear capa de acceso SQLite (queries parametrizadas).
 
 ### Fase 2: Catálogo de libros
 1. Implementar `GET /api/v1/books` con filtros y paginación.
